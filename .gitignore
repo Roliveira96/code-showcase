@@ -1,0 +1,78 @@
+     # Go build artifacts
+     /bin/
+     /obj/
+     *.exe
+     *.exe~
+     *.so
+     *.dylib
+     *.a
+     *.out
+
+     # Test binary, build and coverage files
+     *.test
+     *.cover
+
+     # Dependency directories (Note: Go modules are recommended, so these are less common)
+     vendor/
+
+     # IDE and editor folders
+     .idea/
+     *.sublime-workspace
+     *.sublime-project
+
+     # Visual Studio Code
+     .vscode/
+
+     # JetBrains GoLand
+     *.iml
+     *.ipr
+     *.iws
+
+     # macOS Finder
+     .DS_Store
+
+     # Thumbnails
+     *.Thumbs.db
+
+     # LibreOffice temporary files
+     ~$*
+     *.~lock.*
+     *.bak
+
+     # Log files
+     *.log
+
+     # Environment files
+     .env
+
+     # Archive files
+     *.zip
+     *.tar.gz
+     *.tar.bz2
+     *.rar
+
+     # Node modules (if using with frontend)
+     node_modules/
+
+     # Python bytecode files (if using Python for any scripting)
+     *.pyc
+     *.pyo
+     __pycache__/
+
+     # Ruby (if applicable)
+     *.gem
+     *.rbc
+     .rbenv-*
+     .rvmrc
+
+     # Others
+     *.swp
+     *.swo
+     *.swn
+     *.tmp
+     *.bak
+     *.orig
+     *.swm
+     *.swo
+     *.swn
+     *.log
