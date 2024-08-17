@@ -55,43 +55,12 @@ func main() {
 		i++
 	}
 
-	/*	f.SetCellValue(mainSheet, "A1", "Número")
-		f.SetCellValue(mainSheet, "B1", "Mês")*/
-
-	// Adiciona os meses na planilha de configuração para a validação de dados
-	//	months := []string{"Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"}
-
-	/*	// Define a validação de dados para a coluna "Mês" (B2:B1000) usando uma lista de strings
-		dvMonth := excelize.NewDataValidation(true)
-		dvMonth.Sqref = "B2:B100000"
-		dvMonth.SetDropList(months)
-		if err := f.AddDataValidation(mainSheet, dvMonth); err != nil {
-			fmt.Println(err)
-			return
-		}
-	*/
-	// Define a validação de dados para a coluna "Ano" (C2:C1000) com anos de 2010 a 2030
-	years := []string{}
-	for year := 2010; year <= 2030; year++ {
-		years = append(years, fmt.Sprintf("%d", year))
-	}
-
-	/*	// Define a validação de dados para a coluna "Ano" (C2:C1000) com anos de 2010 a 2030
-		dvAno := excelize.NewDataValidation(true)
-		dvAno.Sqref = "C2:C100000"
-		dvAno.SetDropList(years)
-		if err := f.AddDataValidation(mainSheet, dvAno); err != nil {
-			fmt.Println(err)
-			return
-		}*/
-
-	if err := f.DeleteSheet("Sheet1"); err != nil {
+	if err = f.DeleteSheet("Sheet1"); err != nil {
 		fmt.Println("Erro ao remover a planilha:", err)
 		return
 	}
 
-	// Salva o arquivo Excel
-	if err := f.SaveAs("example.xlsx"); err != nil {
+	if err = f.SaveAs("example.xlsx"); err != nil {
 		fmt.Println(err)
 		return
 	}
