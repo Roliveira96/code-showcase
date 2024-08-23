@@ -1,32 +1,31 @@
 package main
 
 import (
+	"context"
+	"io/ioutil"
+	"log"
 	"os"
+	"time"
 
+	"github.com/chromedp/chromedp"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 )
 
 func main() {
 	// Dados fictícios para o gráfico de radar / Fictional data for the radar chart
-	indicators := []*opts.Indicator{
-		{Name: "Vendas", Max: 100},          // Sales
-		{Name: "Marketing", Max: 100},       // Marketing
-		{Name: "Pesquisa", Max: 100},        // Research
-		{Name: "Desenvolvimento", Max: 100}, // Development
-		{Name: "Suporte", Max: 100},         // Support
+	var indicators []*opts.Indicator
+
+	indicators = []*opts.Indicator{
+		{Name: "Vendas", Max: 100, Min: 2, Color: "red"}, // Sales
+		{Name: "Marketing", Max: 100},                    // Marketing
+		{Name: "Pesquisa", Max: 100},                     // Research
+		{Name: "Desenvolvimento", Max: 100},              // Development
+		{Name: "Suporte", Max: 100},                      // Support
 	}
 
-	data := []opts.RadarData{
-		{
-			Name:  "Equipe A", // Team A
-			Value: []float64{80, 90, 70, 85, 95},
-		},
-		{
-			Name:  "Equipe B", // Team B
-			Value: []float64{60, 85, 75, 95, 80},
-		},
-	}
+	dataA := []float64{80, 90, 70, 85, 95}
+	dataB := []float64{60, 85, 75, 95, 80}
 
 	// Criar o gráfico de radar / Create the radar chart
 	radar := charts.NewRadar()
@@ -34,22 +33,48 @@ func main() {
 		charts.WithTitleOpts(opts.Title{
 			Title: "Gráfico de Radar", // Radar Chart
 		}),
-		charts.WithRadarComponentOpts(opts.RadarComponent{
-			Indicator: indicators,
-		}),
 	)
 
-	radar.AddSeries("Radar", data).
+	radar.AddSeries("Equipe A", []opts.RadarData{{Value: dataA, Name: "Equipe A"}}).
+		AddSeries("Equipe B", []opts.RadarData{{Value: dataB, Name: "Equipe B"}}).
 		SetSeriesOptions(
-			charts.WithLineStyleOpts(opts.LineStyle{Color: "red"}), // Cor da linha / Line color
-			charts.WithAreaStyleOpts(opts.AreaStyle{Opacity: 0.2}), // Opacidade da área / Area opacity
+			charts.WithLineStyleOpts(opts.LineStyle{Width: 2}),           // Largura da linha / Line width
+			charts.WithAreaStyleOpts(opts.AreaStyle{Opacity: 0.2}),       // Opacidade da área / Area opacity
+			charts.WithItemStyleOpts(opts.ItemStyle{Color: "#f00"}),      // Cor dos itens / Items color
+			charts.WithLabelOpts(opts.Label{Show: nil, Position: "top"}), // Mostrar rótulos / Show labels
 		)
 
-	// Salvar o gráfico em um arquivo PNG / Save the chart as a PNG file
-	f, _ := os.Create("radar_chart.html") // Criar um arquivo HTML / Create an HTML file
-	defer f.Close()
-	radar.Render(f) // Renderizar o gráfico / Render the chart
+	radar.RadarComponent.Indicator = indicators
 
-	// Observação: Para salvar como PNG, você precisa de uma ferramenta adicional como o `wkhtmltoimage` ou usar uma biblioteca que suporte exportação de imagem diretamente.
-	// Note: To save as PNG, you'll need an additional tool like `wkhtmltoimage` or use a library that supports direct image export.
+	// Renderizar o gráfico em um arquivo HTML / Render the chart to an HTML file
+	f, _ := os.Create("radar_chart.html")
+	defer f.Close()
+	radar.Render(f)
+
+	// Ler o HTML para uma string / Read the HTML into a string
+	htmlData, err := ioutil.ReadFile("radar_chart.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Usar Chromedp para renderizar a imagem / Use Chromedp to render the image
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var buf []byte
+	err = chromedp.Run(ctx, chromedp.Tasks{
+		chromedp.Navigate("data:text/html," + string(htmlData)),
+		chromedp.Sleep(130 * time.Second), // Esperar o carregamento / Wait for the loading
+		chromedp.FullScreenshot(&buf, 100),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Salvar o buffer de bytes como um arquivo PNG / Save the byte buffer as a PNG file
+	if err := ioutil.WriteFile("radar_chart.png", buf, 0644); err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Imagem salva como radar_chart.png") // Image saved as radar_chart.png
 }
