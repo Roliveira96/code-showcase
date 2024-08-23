@@ -69,25 +69,28 @@ func main() {
 }
 
 func setColun[T any](f *excelize.File, indexColun uint, sheet, nameColun string, values []T) error {
-	// Preciso pegar o nome da coluna
-	cellName := getColumnName(indexColun)
-	fmt.Println(fmt.Sprintf("%s1", cellName))
-	err := f.SetCellValue(sheet, fmt.Sprintf("%s1", cellName), nameColun)
+	letterCell := getColumnName(indexColun)
+
+	err := f.SetCellValue(sheet, fmt.Sprintf("%s1", letterCell), nameColun)
 	if err != nil {
 		return err
 	}
 	if len(values) > 1 {
-		dvAno := excelize.NewDataValidation(true)
-		dvAno.Sqref = fmt.Sprintf("%s2:%s100000", cellName, cellName)
+		dv := excelize.NewDataValidation(true)
+		dv.Sqref = fmt.Sprintf("%s2:%s100000", letterCell, letterCell)
 
 		sliceString := convertToStringSlice(values)
-		dvAno.SetDropList(sliceString)
-		if err = f.AddDataValidation(sheet, dvAno); err != nil {
+
+		if err = dv.SetDropList(sliceString); err != nil {
+			return err
+		}
+
+		if err = f.AddDataValidation(sheet, dv); err != nil {
 			return err
 		}
 	}
-	return nil
 
+	return nil
 }
 
 func getColumnName(n uint) string {
@@ -101,7 +104,6 @@ func getColumnName(n uint) string {
 func convertToStringSlice[T any](s []T) []string {
 	var result []string
 	for _, v := range s {
-		// Convertendo o valor para string
 		str := fmt.Sprintf("%v", v)
 		result = append(result, str)
 	}
@@ -111,26 +113,21 @@ func convertToStringSlice[T any](s []T) []string {
 func structToMap(s interface{}) map[string][]string {
 	result := make(map[string][]string)
 
-	// Obtém o valor e tipo do struct
 	value := reflect.ValueOf(s)
 	typeOfS := reflect.TypeOf(s)
 
-	// Certifica-se de que o valor é um struct
 	if value.Kind() != reflect.Struct {
 		fmt.Println("Expected a struct")
 		return nil
 	}
 
-	// Itera sobre os campos do struct
 	for i := 0; i < value.NumField(); i++ {
 		field := value.Field(i)
 		fieldType := typeOfS.Field(i)
 
-		// Obtém o nome do campo e o valor
 		fieldName := fieldType.Name
 		fieldValue := field.Interface()
 
-		// Converte o valor do campo para um slice de strings
 		var fieldValueSlice []string
 		switch v := fieldValue.(type) {
 		case string:
