@@ -52,17 +52,13 @@ func main() {
 	radar.RadarComponent.Indicator = indicators
 
 	// Adicionar séries com cores diferentes
-	// Adicionar séries com cores diferentes
 	for i, team := range teams {
-		series := opts.RadarData{
-			Name:  team,
-			Value: data[i],
-		}
-		radar.AddSeries(team, []opts.RadarData{series}).
+		radar.AddSeries(team, []opts.RadarData{{Value: data[i], Name: team}}).
 			SetSeriesOptions(
-				charts.WithLineStyleOpts(opts.LineStyle{Width: 1}),
-				charts.WithAreaStyleOpts(opts.AreaStyle{Opacity: 0.2}),
-				charts.WithLabelOpts(opts.Label{Show: &teste, Position: "left"}),
+				charts.WithLineStyleOpts(opts.LineStyle{Width: 1}),               // Largura da linha
+				charts.WithAreaStyleOpts(opts.AreaStyle{Opacity: 0.2}),           // Opacidade da área
+				charts.WithItemStyleOpts(opts.ItemStyle{Color: colors[i]}),       // Cor dos itens
+				charts.WithLabelOpts(opts.Label{Show: &teste, Position: "left"}), // Mostrar rótulos
 			)
 	}
 
