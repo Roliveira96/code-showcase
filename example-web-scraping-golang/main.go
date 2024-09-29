@@ -49,5 +49,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("Clicado em 'Imagens' com sucesso!")
+	fmt.Println("Clicado em "
+	Imagens
+	" com sucesso!")
 }
