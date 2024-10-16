@@ -1,4 +1,4 @@
-module main
+module example-export-template-excel
 
 go 1.21
 
