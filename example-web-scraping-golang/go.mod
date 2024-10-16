@@ -1,4 +1,4 @@
-module main
+module example-web-scraping-golang
 
 go 1.22.6
 
