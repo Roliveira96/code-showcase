@@ -65,9 +65,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Arquivo Excel "
-	example.xlsx
-	" criado com sucesso.")
+	fmt.Println("Arquivo Excel example.xlsx criado com sucesso.")
 }
 
 func setColun[T any](f *excelize.File, indexColun uint, sheet, nameColun string, values []T) error {
@@ -137,15 +135,13 @@ func structToMap(s interface{}) map[string][]string {
 		case int:
 			fieldValueSlice = []string{strconv.Itoa(v)}
 		case float64:
-			fieldValueSlice = []string{strconv.FormatFloat(v, "f", -1, 64)}
+			fieldValueSlice = []string{strconv.FormatFloat(v, 'f', -1, 64)}
 		case []string:
 			fieldValueSlice = v
-		// Adicione mais casos conforme necessário
 		default:
 			fieldValueSlice = []string{fmt.Sprintf("%v", v)}
 		}
 
-		// Adiciona o nome do campo e o valor ao mapa
 		result[fieldName] = fieldValueSlice
 	}
 
