@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-type Colaborador struct {
-	Nome           string `json:"nome_colaborador"`
-	Cargo          string `json:"cargo"`
-	CPF            string `json:"cpf"`
-	DataNascimento string `json:"data_nascimento"`
-	Telefone       string `json:"telefone"`
-	Ativo          bool   `json:"ativo"`
+type Employee struct {
+	Name      string `json:"nome_colaborador"`
+	Position  string `json:"cargo"`
+	CPF       string `json:"cpf"`
+	BirthDate string `json:"data_nascimento"`
+	Phone     string `json:"telefone"`
+	Active    bool   `json:"ativo"`
 }
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 	}
 
 	rows := f.GetRows(sheetName)
-	var colaboradores []Colaborador
+	var employees []Employee
 
 	if len(rows) == 0 {
 		panic("O arquivo Excel está vazio.")
@@ -40,29 +40,35 @@ func main() {
 			continue
 		}
 
-		var colaborador Colaborador
+		var employee Employee
 
 		for j, cell := range row {
 			nomeColuna := strings.ToLower(strings.ReplaceAll(colunas[j], " ", "_"))
 			switch nomeColuna {
 			case "nome_colaborador":
-				colaborador.Nome = cell
+				employee.Name = cell
 			case "data_de_nascimento":
-				colaborador.DataNascimento = cell
+				employee.BirthDate = cell
 			case "telefone":
-				colaborador.Telefone = cell
+				employee.Phone = cell
 			case "cargo":
-				colaborador.Cargo = cell
+				employee.Position = cell
 			case "ativo":
-				colaborador.Ativo = isActive(cell)
+				employee.Active = isActive(cell)
 			}
 		}
 
-		colaboradores = append(colaboradores, colaborador)
+		employees = append(employees, employee)
 	}
 
-	for _, colaborador := range colaboradores {
-		fmt.Printf("Nome: %s, data nascimento: %s, telefone: %s, cargo: %s, ativo: %t\n", colaborador.Nome, colaborador.DataNascimento, colaborador.Telefone, colaborador.Cargo, colaborador.Ativo)
+	for _, employee := range employees {
+
+		active := "Não"
+		if employee.Active {
+			active = "Sim"
+		}
+
+		fmt.Printf("Nome: %s, data nascimento: %s, telefone: %s, cargo: %s, ativo: %s\n", employee.Name, employee.BirthDate, employee.Phone, employee.Position, active)
 	}
 }
 
