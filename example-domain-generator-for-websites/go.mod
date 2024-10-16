@@ -1,4 +1,4 @@
-module main
+module example_domain_generator_for_websites
 
 go 1.22.6
 
