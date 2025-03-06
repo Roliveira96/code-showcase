@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"image/color"
+	_ "image/color"
 	"log"
 	"time"
 

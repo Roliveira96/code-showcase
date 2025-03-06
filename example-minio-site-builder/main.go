@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -18,10 +19,11 @@ func main() {
 	accessKeyID := "minio"        // Teu usuário do MinIO.
 	secretAccessKey := "minio123" // Tua senha do MinIO.
 	useSSL := false
-	bucketName := "meu-bucket-teste" // Nome do bucket.
-	objectName := "imagens/minha-imagem.jpg"
+	bucketName := "bucket-publico" // Nome do bucket.
 
 	filePath := "./imagens/minha-imagem.jpg"
+
+	objectName := "imagens/" + filepath.Base(filePath)
 
 	// Conecta no MinIO.
 	minioClient, err := minio.New(endpoint, &minio.Options{
