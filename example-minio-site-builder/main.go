@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +13,9 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+
+	"github.com/kolesa-team/go-webp/encoder"
+	"github.com/kolesa-team/go-webp/webp"
 )
 
 func main() {
@@ -70,11 +76,27 @@ func main() {
 	fileSizeMB := float64(fileSize) / (1024 * 1024)
 	fmt.Printf("Tamanho do arquivo: %.2f MB\n", fileSizeMB)
 
-	// --- UPLOAD da imagem ---
-	contentType := "image/jpeg"
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatalf("Erro ao abrir a imagem: %v", err)
+	}
+	defer file.Close()
 
+	img, err := jpeg.Decode(file)
+	if err != nil {
+		log.Fatalf("Erro ao decodificar a imagem: %v", err)
+	}
+
+	// Converte para WebP usando a função
+	webpBuffer, err := convertImageToWebPBuffer(img)
+	if err != nil {
+		log.Fatalf("Erro ao converter para WebP: %v", err)
+	}
+
+	contentType := "image/webp"
+	objectName = "imagens/teste.webp"
 	// André, a função FPutObject() é que manda a imagem pro MinIO.
-	_, err = minioClient.FPutObject(ctx, bucketName, objectName, filePath, minio.PutObjectOptions{ContentType: contentType})
+	_, err = minioClient.PutObject(ctx, bucketName, objectName, webpBuffer, int64(webpBuffer.Len()), minio.PutObjectOptions{ContentType: contentType})
 	if err != nil {
 		log.Fatalf("Erro no upload: %v", err)
 	}
@@ -95,4 +117,20 @@ func main() {
 
 	// André: Gera um HTMLzinho pra mostrar a imagem. Copia e cola num arquivo .html pra ver.
 	fmt.Printf("<img src=\"%s\" alt=\"Minha Imagem\">\n", objectURL)
+}
+
+// Converte image.Image para webp e retorna o buffer
+func convertImageToWebPBuffer(img image.Image) (*bytes.Buffer, error) {
+	var imagem bytes.Buffer
+
+	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, 75)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := webp.Encode(&imagem, img, options); err != nil {
+		return nil, err
+	}
+
+	return &imagem, nil
 }
