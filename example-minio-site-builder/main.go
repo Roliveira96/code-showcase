@@ -62,7 +62,7 @@ func main() {
 		fmt.Printf("Bucket '%s' criado!\n", bucketName)
 	}
 
-	// Aqui a gente TORNAR O BUCKET PÚBLICO.  Cuidado! Isso libera geral pra ver o conteúdo.
+	// Aqui a gente TORNAR O BUCKET PÚBLICO. Cuidado! Isso libera geral pra ver o conteúdo.
 	policy := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":["*"]},"Action":["s3:GetObject"],"Resource":["arn:aws:s3:::` + bucketName + `/*"]}]}`
 	err = minioClient.SetBucketPolicy(ctx, bucketName, policy)
 	if err != nil {
