@@ -5,6 +5,7 @@ go 1.22.6
 require (
 	github.com/kolesa-team/go-webp v1.0.4
 	github.com/minio/minio-go/v7 v7.0.87
+	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
 )
 
 require (
