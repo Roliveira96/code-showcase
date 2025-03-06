@@ -82,8 +82,7 @@ func validarUsuario(validate *validator.Validate, trans ut.Translator, exemplo i
 	err := validate.Struct(usuario)
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
-			fmt.Printf("Erro no campo " % s
-			": %s\n", err.Field(), err.Translate(trans))
+			fmt.Printf("Erro no campo %s: %s\n", err.Field(), err.Translate(trans))
 		}
 	} else {
 		fmt.Println("Validação bem-sucedida!")
