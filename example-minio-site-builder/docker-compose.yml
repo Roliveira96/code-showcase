@@ -5,23 +5,21 @@ services:
     image: minio/minio
     container_name: teste-minio
     environment:
-      MINIO_ROOT_USER: minio  # Use MINIO_ROOT_USER/PASSWORD for latest versions
+      MINIO_ROOT_USER: minio
       MINIO_ROOT_PASSWORD: minio123
       MINIO_ACCESS_KEY: minio
       MINIO_SECRET_KEY: minio123
       MINIO_BROWSER: "on"
-      MINIO_DOMAIN: teste-minio   # ISSO É CRUCIAL!
+      MINIO_DOMAIN: teste-minio
       MINIO_CONSOLE_ADDRESS: ":9001"
-      MINIO_SERVER_URL: http://teste-minio:9000 # ESSENTIAL: Set the correct internal URL
-
-
+      MINIO_SERVER_URL: http://teste-minio:9000
       # MINIO_REGION_NAME: us-east-1
     ports:
       - "9011:9000"
       - "9001:9001"
     volumes:
       - minio-data:/data
-    command: server --console-address ":9001" /data  # More explicit command
+    command: server --console-address ":9001" /data
     networks:
       - teste-network
 
