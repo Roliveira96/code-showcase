@@ -8,6 +8,7 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 	"os"
+	"regexp"
 	"sort"
 
 	"net"
@@ -19,9 +20,12 @@ func main() {
 	topleveldomains := []string{".com", ".com.br"}
 
 	words := []string{
-		"%¨&*$@#$%#$¨,", "luna", "cosmos", "digital", "digital", "galaxy", "cosmos", "pixel", "android", "golang", "go", "google.com", "google.com.br", "1234567890",
+		"Byte", "Click", "Code", "Core", "Cyber", "Flow", "Flux", "Hub", "Hyper", "Infinity", "Link", "Loop", "Matrix", "Net", "Pixel", "Pulse", "Quantum", "Spark", "Tech", "Vertex", "Viral", "Wave", "Web",
+		"Cognitivo", "Digital", "Hiper", "up", "upsite", "house", "studio", "agencia", "world",
+		"tech", "WEB", "SOFT", "site", "web", "gato", "meggie", "mega", "surf", "code", "mrs", "robot", "go", "inside", "color", "mallows", "mash", "all",
 	}
 
+	words = sanitizeStrings(words)
 	domains := generateDomains(words, topleveldomains)
 
 	err := createFileDomains(domains)
@@ -29,6 +33,39 @@ func main() {
 		fmt.Println("Erro:", err)
 		return
 	}
+}
+
+func sanitizeString(str string) string {
+	reg, err := regexp.Compile("[^a-zA-Z0-9 ]+")
+	if err != nil {
+		return ""
+	}
+	str = reg.ReplaceAllString(str, "")
+
+	str = strings.ToLower(str)
+
+	str = strings.ReplaceAll(str, " ", "")
+
+	words := strings.Fields(str)
+	uniqueWords := make(map[string]bool)
+	var result []string
+	for _, word := range words {
+		if !uniqueWords[word] {
+			uniqueWords[word] = true
+			result = append(result, word)
+		}
+	}
+	str = strings.Join(result, " ")
+
+	return str
+}
+
+func sanitizeStrings(strings []string) []string {
+	var sanitizedStrings []string
+	for _, str := range strings {
+		sanitizedStrings = append(sanitizedStrings, sanitizeString(str))
+	}
+	return sanitizedStrings
 }
 
 func generateDomains(words, topleveldomains []string) []string {
