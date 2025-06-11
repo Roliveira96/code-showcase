@@ -86,6 +86,7 @@ func getAccessToken(tenantID, clientID, clientSecret string) (string, error) {
 	}
 
 	fmt.Println("Token de acesso obtido com sucesso.")
+	fmt.Println("Token:", tokenResp.AccessToken)
 	return tokenResp.AccessToken, nil
 }
 
