@@ -1,0 +1,1 @@
+package exemple_and_tests_golang

@@ -43,7 +43,7 @@
      *.log
 
      # Environment files
-     .env
+     *.env
 
      # Archive files
      *.zip
@@ -73,6 +73,7 @@
      *.bak
      *.orig
      *.swm
+     **/.env
      *.swo
      *.swn
      *.log
@@ -83,3 +84,6 @@
 /.idea/misc.xml
 /example-export-template-excel/main
 /.idea/exempla-and-tests-golang.iml
+
+
+/example-send-email-use-apikey-azure-outlook/.env
