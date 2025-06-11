@@ -171,18 +171,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	emailSubject := "Teste de E-mail da Aplicação - Grownt.tech (Golang - Refatorado)"
+	emailSubject := "URGENTE - Revisar todos os seus chamados aberto"
 	emailBodyContentHTML := `
     <html>
         <body>
-            <p>Olá Ricardo,</p>
-            <p>Este é um e-mail de teste enviado automaticamente pela sua aplicação em <strong>Golang</strong> utilizando a <strong>Microsoft Graph API</strong> e o <strong>Azure AD</strong>.</p>
-            <p>Se você recebeu esta mensagem, a configuração está funcionando!</p>
-            <br>
-            <p>Este e-mail demonstra o código <strong>refatorado</strong> com funções para cada responsabilidade.</p>
-            <br>
-            <p>Atenciosamente,</p>
-            <p>Equipe de Suporte Grownt.tech</p>
+            <p>Oi, Marcelo se você não responder os chamados até amanhã, iremos travar seus pontos de função no base por 3 meses. Já alinhei isso com o André.</p>
         </body>
     </html>
     `
