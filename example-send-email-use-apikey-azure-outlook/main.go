@@ -6,47 +6,77 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-
 	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 )
 
-// TokenResponse representa a estrutura da resposta ao obter um token de acesso
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
 }
 
-// EmailMessage representa a estrutura do corpo do e-mail para a Graph API
-type EmailMessage struct {
-	Message struct {
-		Subject string `json:"subject"`
-		Body    struct {
-			ContentType string `json:"contentType"`
-			Content     string `json:"content"`
-		} `json:"body"`
-		ToRecipients []struct {
-			EmailAddress struct {
-				Address string `json:"address"`
-			} `json:"emailAddress"`
-		} `json:"toRecipients"`
-	} `json:"message"`
-	SaveToSentItems bool `json:"saveToSentItems"`
+type EmailAddress struct {
+	Address string `json:"address"`
 }
 
-// loadEnv carrega as variáveis de ambiente do arquivo .env
+type Recipient struct {
+	EmailAddress EmailAddress `json:"emailAddress"`
+}
+
+type EmailBodyContent struct {
+	ContentType string `json:"contentType"`
+	Content     string `json:"content"`
+}
+
+type Message struct {
+	Subject      string           `json:"subject"`
+	Body         EmailBodyContent `json:"body"`
+	ToRecipients []Recipient      `json:"toRecipients"`
+}
+
+type EmailMessage struct {
+	Message         Message `json:"message"`
+	SaveToSentItems bool    `json:"saveToSentItems"`
+}
+
+func CreateEmailBody(contentType, content string) EmailBodyContent {
+	return EmailBodyContent{
+		ContentType: contentType,
+		Content:     content,
+	}
+}
+
+func CreateToRecipients(emails ...string) []Recipient {
+	recipients := make([]Recipient, len(emails))
+	for i, email := range emails {
+		recipients[i] = Recipient{
+			EmailAddress: EmailAddress{Address: email},
+		}
+	}
+	return recipients
+}
+
+func CreateEmailMessage(subject string, body EmailBodyContent, toRecipients []Recipient, saveToSentItems bool) EmailMessage {
+	return EmailMessage{
+		Message: Message{
+			Subject:      subject,
+			Body:         body,
+			ToRecipients: toRecipients,
+		},
+		SaveToSentItems: saveToSentItems,
+	}
+}
+
 func loadEnv() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Erro ao carregar arquivo .env:", err)
-		// Em ambiente de produção, considere fazer o programa falhar ou ter um fallback
 	}
 }
 
-// getAccessToken obtém um token de acesso usando as credenciais do aplicativo
 func getAccessToken(tenantID, clientID, clientSecret string) (string, error) {
 	authURL := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
 
@@ -90,45 +120,10 @@ func getAccessToken(tenantID, clientID, clientSecret string) (string, error) {
 	return tokenResp.AccessToken, nil
 }
 
-// sendOutlookEmail envia um e-mail usando a Microsoft Graph API
-func sendOutlookEmail(accessToken, sender, recipient, subject, bodyContent string) error {
+func sendOutlookEmail(accessToken, sender string, emailData EmailMessage) error {
 	graphAPIURL := fmt.Sprintf("https://graph.microsoft.com/v1.0/users/%s/sendMail", sender)
 
-	emailBody := EmailMessage{
-		Message: struct {
-			Subject string `json:"subject"`
-			Body    struct {
-				ContentType string `json:"contentType"`
-				Content     string `json:"content"`
-			} `json:"body"`
-			ToRecipients []struct {
-				EmailAddress struct {
-					Address string `json:"address"`
-				} `json:"emailAddress"`
-			} `json:"toRecipients"`
-		}{
-			Subject: subject,
-			Body: struct {
-				ContentType string `json:"contentType"`
-				Content     string `json:"content"`
-			}{
-				ContentType: "HTML", // Ou "Text"
-				Content:     bodyContent,
-			},
-			ToRecipients: []struct {
-				EmailAddress struct {
-					Address string `json:"address"`
-				} `json:"emailAddress"`
-			}{
-				{EmailAddress: struct {
-					Address string `json:"address"`
-				}{Address: recipient}},
-			},
-		},
-		SaveToSentItems: true,
-	}
-
-	jsonBody, err := json.Marshal(emailBody)
+	jsonBody, err := json.Marshal(emailData)
 	if err != nil {
 		return fmt.Errorf("erro ao serializar corpo do e-mail: %w", err)
 	}
@@ -147,7 +142,7 @@ func sendOutlookEmail(accessToken, sender, recipient, subject, bodyContent strin
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusAccepted { // 202 Accepted para sendMail
+	if resp.StatusCode != http.StatusAccepted {
 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
 		return fmt.Errorf("erro ao enviar e-mail - status: %d, corpo: %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -170,30 +165,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 1. Obter o token de acesso
 	accessToken, err := getAccessToken(tenantID, clientID, clientSecret)
 	if err != nil {
 		fmt.Println("Erro ao obter token de acesso:", err)
 		os.Exit(1)
 	}
 
-	// 2. Enviar o e-mail
-	emailSubject := "Teste de E-mail da Aplicação - Grownt.tech (Golang)"
-	emailBodyContent := `
+	emailSubject := "Teste de E-mail da Aplicação - Grownt.tech (Golang - Refatorado)"
+	emailBodyContentHTML := `
     <html>
         <body>
             <p>Olá Ricardo,</p>
             <p>Este é um e-mail de teste enviado automaticamente pela sua aplicação em <strong>Golang</strong> utilizando a <strong>Microsoft Graph API</strong> e o <strong>Azure AD</strong>.</p>
             <p>Se você recebeu esta mensagem, a configuração está funcionando!</p>
             <br>
+            <p>Este e-mail demonstra o código <strong>refatorado</strong> com funções para cada responsabilidade.</p>
+            <br>
             <p>Atenciosamente,</p>
             <p>Equipe de Suporte Grownt.tech</p>
         </body>
     </html>
     `
+	emailBody := CreateEmailBody("HTML", emailBodyContentHTML)
+
+	toRecipients := CreateToRecipients(recipientEmail)
+
+	emailMessage := CreateEmailMessage(emailSubject, emailBody, toRecipients, true)
 
 	fmt.Printf("Tentando enviar e-mail de %s para %s...\n", senderEmail, recipientEmail)
-	err = sendOutlookEmail(accessToken, senderEmail, recipientEmail, emailSubject, emailBodyContent)
+	err = sendOutlookEmail(accessToken, senderEmail, emailMessage)
 	if err != nil {
 		fmt.Println("Ocorreu um erro no envio do e-mail:", err)
 		os.Exit(1)
