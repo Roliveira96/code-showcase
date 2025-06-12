@@ -31,10 +31,18 @@ type EmailBodyContent struct {
 	Content     string `json:"content"`
 }
 
+// InternetMessageHeader representa um cabeçalho de mensagem de internet personalizado
+type InternetMessageHeader struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+// Message agora inclui InternetMessageHeaders para cabeçalhos personalizados
 type Message struct {
-	Subject      string           `json:"subject"`
-	Body         EmailBodyContent `json:"body"`
-	ToRecipients []Recipient      `json:"toRecipients"`
+	Subject                string                  `json:"subject"`
+	Body                   EmailBodyContent        `json:"body"`
+	ToRecipients           []Recipient             `json:"toRecipients"`
+	InternetMessageHeaders []InternetMessageHeader `json:"internetMessageHeaders,omitempty"`
 }
 
 type EmailMessage struct {
@@ -59,13 +67,23 @@ func CreateToRecipients(emails ...string) []Recipient {
 	return recipients
 }
 
-func CreateEmailMessage(subject string, body EmailBodyContent, toRecipients []Recipient, saveToSentItems bool) EmailMessage {
+// CreateEmailMessage agora aceita um mapa de cabeçalhos personalizados
+func CreateEmailMessage(subject string, body EmailBodyContent, toRecipients []Recipient, saveToSentItems bool, customHeaders map[string]string) EmailMessage {
+	msg := Message{
+		Subject:      subject,
+		Body:         body,
+		ToRecipients: toRecipients,
+	}
+
+	if len(customHeaders) > 0 {
+		msg.InternetMessageHeaders = make([]InternetMessageHeader, 0, len(customHeaders))
+		for name, value := range customHeaders {
+			msg.InternetMessageHeaders = append(msg.InternetMessageHeaders, InternetMessageHeader{Name: name, Value: value})
+		}
+	}
+
 	return EmailMessage{
-		Message: Message{
-			Subject:      subject,
-			Body:         body,
-			ToRecipients: toRecipients,
-		},
+		Message:         msg,
 		SaveToSentItems: saveToSentItems,
 	}
 }
@@ -159,6 +177,7 @@ func main() {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	senderEmail := os.Getenv("SENDER_EMAIL")
 	recipientEmail := os.Getenv("RECIPIENT_EMAIL")
+	idRicardo := os.Getenv("IDRICARDO")
 
 	if tenantID == "" || clientID == "" || clientSecret == "" || senderEmail == "" || recipientEmail == "" {
 		fmt.Println("Erro: Verifique se todas as variáveis no arquivo .env estão preenchidas.")
@@ -171,11 +190,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	emailSubject := "URGENTE - Revisar todos os seus chamados aberto"
+	emailSubject := "Teste de E-mail da Aplicação - Grownt.tech (Golang - Refatorado)"
 	emailBodyContentHTML := `
     <html>
         <body>
-            <p>Oi, Marcelo se você não responder os chamados até amanhã, iremos travar seus pontos de função no base por 3 meses. Já alinhei isso com o André.</p>
+            <p>Olá Ricardo,</p>
+            <p>Este é um e-mail de teste enviado automaticamente pela sua aplicação em <strong>Golang</strong> utilizando a <strong>Microsoft Graph API</strong> e o <strong>Azure AD</strong>.</p>
+            <p>Se você recebeu esta mensagem, a configuração está funcionando!</p>
+            <br>
+            <p>Este e-mail demonstra o código <strong>refatorado</strong> com funções para cada responsabilidade.</p>
+            <br>
+            <p>Atenciosamente,</p>
+            <p>Equipe de Suporte Grownt.tech</p>
         </body>
     </html>
     `
@@ -183,7 +209,14 @@ func main() {
 
 	toRecipients := CreateToRecipients(recipientEmail)
 
-	emailMessage := CreateEmailMessage(emailSubject, emailBody, toRecipients, true)
+	// Define os cabeçalhos personalizados
+	customHeaders := map[string]string{
+		"X-Sent-Via":     "Mensageria",
+		"X-App-Name":     "Boards",
+		"X-ID-SEND-AUTH": idRicardo,
+	}
+
+	emailMessage := CreateEmailMessage(emailSubject, emailBody, toRecipients, true, customHeaders)
 
 	fmt.Printf("Tentando enviar e-mail de %s para %s...\n", senderEmail, recipientEmail)
 	err = sendOutlookEmail(accessToken, senderEmail, emailMessage)
