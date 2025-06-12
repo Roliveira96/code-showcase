@@ -13,9 +13,10 @@ import (
 )
 
 type TokenResponse struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"`
+	ExtExpiresIn int    `json:"ext_expires_in"` // Campo adicional, se presente
 }
 
 type EmailAddress struct {
@@ -31,13 +32,11 @@ type EmailBodyContent struct {
 	Content     string `json:"content"`
 }
 
-// InternetMessageHeader representa um cabeçalho de mensagem de internet personalizado
 type InternetMessageHeader struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
 
-// Message agora inclui InternetMessageHeaders para cabeçalhos personalizados
 type Message struct {
 	Subject                string                  `json:"subject"`
 	Body                   EmailBodyContent        `json:"body"`
@@ -67,7 +66,6 @@ func CreateToRecipients(emails ...string) []Recipient {
 	return recipients
 }
 
-// CreateEmailMessage agora aceita um mapa de cabeçalhos personalizados
 func CreateEmailMessage(subject string, body EmailBodyContent, toRecipients []Recipient, saveToSentItems bool, customHeaders map[string]string) EmailMessage {
 	msg := Message{
 		Subject:      subject,
@@ -135,6 +133,8 @@ func getAccessToken(tenantID, clientID, clientSecret string) (string, error) {
 
 	fmt.Println("Token de acesso obtido com sucesso.")
 	fmt.Println("Token:", tokenResp.AccessToken)
+
+	fmt.Printf("O token expira em: %d segundos (%s a partir de agora)\n", tokenResp.ExpiresIn, time.Duration(tokenResp.ExpiresIn)*time.Second)
 	return tokenResp.AccessToken, nil
 }
 
@@ -177,7 +177,7 @@ func main() {
 	clientSecret := os.Getenv("CLIENT_SECRET")
 	senderEmail := os.Getenv("SENDER_EMAIL")
 	recipientEmail := os.Getenv("RECIPIENT_EMAIL")
-	idRicardo := os.Getenv("IDRICARDO")
+	idAuthUser := os.Getenv("IDAUTH")
 
 	if tenantID == "" || clientID == "" || clientSecret == "" || senderEmail == "" || recipientEmail == "" {
 		fmt.Println("Erro: Verifique se todas as variáveis no arquivo .env estão preenchidas.")
@@ -209,11 +209,10 @@ func main() {
 
 	toRecipients := CreateToRecipients(recipientEmail)
 
-	// Define os cabeçalhos personalizados
 	customHeaders := map[string]string{
 		"X-Sent-Via":     "Mensageria",
 		"X-App-Name":     "Boards",
-		"X-ID-SEND-AUTH": idRicardo,
+		"X-ID-SEND-AUTH": idAuthUser,
 	}
 
 	emailMessage := CreateEmailMessage(emailSubject, emailBody, toRecipients, true, customHeaders)
