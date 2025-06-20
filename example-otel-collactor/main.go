@@ -11,17 +11,19 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	// A MUDANÇA ESTÁ AQUI:
+	// MUDANÇA 1: Apelidamos o pacote do SDK para 'sdktrace' para evitar conflito.
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	// MUDANÇA 2: Importamos o pacote da API de trace, que contém a função que faltava.
+	"go.opentelemetry.io/otel/trace"
 )
 
 func initTracer() (func(context.Context), error) {
-	exporter, err := otlptracehttp.New(context.Background(),
-		otlptracehttp.WithInsecure(),
-		otlptracehttp.WithEndpoint("localhost:4318"),
+	exporter, err := otlptracegrpc.New(context.Background(),
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint("localhost:4317"),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("falha ao criar o exporter: %w", err)
@@ -39,9 +41,10 @@ func initTracer() (func(context.Context), error) {
 		return nil, fmt.Errorf("falha ao criar o resource: %w", err)
 	}
 
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(res),
+	// MUDANÇA 3: Usamos o novo apelido 'sdktrace' para chamar o NewTracerProvider.
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(res),
 	)
 
 	otel.SetTracerProvider(tp)
@@ -64,16 +67,33 @@ func main() {
 	r.Use(otelgin.Middleware("meu-servico-gin"))
 
 	r.GET("/ping", func(c *gin.Context) {
+		// Agora o 'trace.SpanFromContext' vai funcionar corretamente.
+		span := trace.SpanFromContext(c.Request.Context())
+		log.Printf(
+			"Trace-ID: %s | Span-ID: %s - Dados de telemetria gerados para a rota /ping",
+			span.SpanContext().TraceID().String(),
+			span.SpanContext().SpanID().String(),
+		)
+
 		c.JSON(http.StatusOK, gin.H{"message": "pong"})
 	})
 
 	r.GET("/hello/:name", func(c *gin.Context) {
+		// E aqui também.
+		span := trace.SpanFromContext(c.Request.Context())
+		log.Printf(
+			"Trace-ID: %s | Span-ID: %s - Dados de telemetria gerados para a rota /hello/:name",
+			span.SpanContext().TraceID().String(),
+			span.SpanContext().SpanID().String(),
+		)
+
 		name := c.Param("name")
+		// O 'otel.Tracer' continua funcionando normalmente.
 		tracer := otel.Tracer("minha-rota-customizada")
-		_, span := tracer.Start(c.Request.Context(), "processamento-interno")
-		span.SetAttributes(attribute.String("param.name", name))
+		_, customSpan := tracer.Start(c.Request.Context(), "processamento-interno")
+		customSpan.SetAttributes(attribute.String("param.name", name))
 		time.Sleep(100 * time.Millisecond)
-		span.End()
+		customSpan.End()
 		message := fmt.Sprintf("Hello, %s!", name)
 		c.JSON(http.StatusOK, gin.H{"greeting": message})
 	})
