@@ -1,0 +1,22 @@
+services:
+  # Serviço para visualizar os traces
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686" # UI do Jaeger
+      - "14250:14250"
+
+  # Serviço do Coletor OpenTelemetry (COM A CORREÇÃO)
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    # MUDANÇA 2: O comando agora aponta para o novo caminho do volume
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes:
+      # MUDANÇA 1: Montamos o arquivo local em um caminho mais simples e seguro
+      - ./otel-collector-config.yaml:/etc/otel/config.yaml
+    ports:
+      - "4318:4318" # OTLP HTTP Receiver
+    depends_on:
+      - jaeger
