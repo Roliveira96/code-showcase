@@ -6,7 +6,6 @@ receivers:
 
 exporters:
   otlphttp:
-    # A CORREÇÃO FINAL ESTÁ AQUI: Adicionamos o "http://"
     endpoint: http://jaeger:4318
     tls:
       insecure: true
