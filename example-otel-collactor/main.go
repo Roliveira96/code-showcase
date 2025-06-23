@@ -13,10 +13,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
-	// MUDANÇA 1: Apelidamos o pacote do SDK para 'sdktrace' para evitar conflito.
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
-	// MUDANÇA 2: Importamos o pacote da API de trace, que contém a função que faltava.
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -41,7 +39,6 @@ func initTracer() (func(context.Context), error) {
 		return nil, fmt.Errorf("falha ao criar o resource: %w", err)
 	}
 
-	// MUDANÇA 3: Usamos o novo apelido 'sdktrace' para chamar o NewTracerProvider.
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
@@ -67,7 +64,6 @@ func main() {
 	r.Use(otelgin.Middleware("meu-servico-gin"))
 
 	r.GET("/ping", func(c *gin.Context) {
-		// Agora o 'trace.SpanFromContext' vai funcionar corretamente.
 		span := trace.SpanFromContext(c.Request.Context())
 		log.Printf(
 			"Trace-ID: %s | Span-ID: %s - Dados de telemetria gerados para a rota /ping",
@@ -79,7 +75,6 @@ func main() {
 	})
 
 	r.GET("/hello/:name", func(c *gin.Context) {
-		// E aqui também.
 		span := trace.SpanFromContext(c.Request.Context())
 		log.Printf(
 			"Trace-ID: %s | Span-ID: %s - Dados de telemetria gerados para a rota /hello/:name",
@@ -88,7 +83,6 @@ func main() {
 		)
 
 		name := c.Param("name")
-		// O 'otel.Tracer' continua funcionando normalmente.
 		tracer := otel.Tracer("minha-rota-customizada")
 		_, customSpan := tracer.Start(c.Request.Context(), "processamento-interno")
 		customSpan.SetAttributes(attribute.String("param.name", name))
