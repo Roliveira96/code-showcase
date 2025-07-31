@@ -87,3 +87,5 @@
 
 
 /example-send-email-use-apikey-azure-outlook/.env
+/example-generate-json-from-send-email/emails.txt
+/example-generate-json-from-send-email/.env
