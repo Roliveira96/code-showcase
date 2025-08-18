@@ -1,0 +1,16 @@
+services:
+  pdf-reader-apache-tika:
+    image: apache/tika:2.9.1.0-full
+    container_name: pdf-reader-apache-tika
+    volumes:
+      - ./tika-config.xml:/tika-config.xml
+      - ./training:/training
+    ports:
+      - "9998:9998"
+    command: ["-c", "/tika-config.xml"]
+    networks:
+      - tika_network
+
+networks:
+  tika_network:
+    driver: bridge
