@@ -4,35 +4,6 @@
         <taskTimeoutMillis>300000</taskTimeoutMillis>
     </server>
     <parsers>
-        <!-- Carrega todos os parsers padrão do Tika -->
         <parser class="org.apache.tika.parser.DefaultParser"/>
-
-        <!-- Sobrescreve a configuração específica do parser de PDF -->
-        <parser class="org.apache.tika.parser.pdf.PDFParser">
-            <params>
-                <!-- Força a estratégia de extrair texto digital E aplicar OCR em imagens -->
-                <param name="ocrStrategy" type="string">ocr_and_text</param>
-
-                <!-- Define os idiomas para o processo de OCR -->
-                <param name="ocrLanguages" type="string">grc+lat+heb+por+eng</param>
-
-                <!-- Aponta para a pasta com os dados de treinamento dentro do container -->
-                <param name="tessdataPath" type="string">/training</param>
-
-                <!-- PARÂMETROS ADICIONAIS PARA MAIOR PRECISÃO -->
-
-                <!-- Habilita o pré-processamento de imagens do Tika para melhorar a qualidade -->
-                <param name="enableImagePreprocessing" type="bool">true</param>
-
-                <!-- Aumenta a resolução da imagem (DPI) antes de enviar ao OCR. Padrão é 200. -->
-                <param name="density" type="int">300</param>
-
-                <!-- Define a profundidade de cor da imagem. -->
-                <param name="depth" type="int">8</param>
-
-                <!-- Define um tempo limite específico para o processo de OCR em segundos. -->
-                <param name="ocrTimeout" type="int">240</param>
-            </params>
-        </parser>
     </parsers>
 </properties>
