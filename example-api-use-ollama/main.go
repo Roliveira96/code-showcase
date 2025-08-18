@@ -3,18 +3,20 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath" // Importe para manipulação de caminhos
+	"path/filepath"
 
-	"github.com/joho/godotenv" // Importe o godotenv
+	"github.com/joho/godotenv"
 )
 
-type RequestBody struct {
-	Model  string `json:"model"`
-	Prompt string `json:"prompt"`
+type AgentRequestBody struct {
+	Model             string `json:"model"`
+	ReviewInstruction string `json:"review_instruction"`
+	Code              string `json:"code"`
 }
 
 type ResponseBody struct {
@@ -22,6 +24,11 @@ type ResponseBody struct {
 	CreatedAt string `json:"created_at"`
 	Response  string `json:"response"`
 	Done      bool   `json:"done"`
+}
+
+type RequestBody struct {
+	Model  string `json:"model"`
+	Prompt string `json:"prompt"`
 }
 
 type Config struct {
@@ -78,14 +85,21 @@ func handleAskOllama(w http.ResponseWriter, r *http.Request, ollamaURI string) {
 		return
 	}
 
-	var requestBody RequestBody
-	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	var agentReqBody AgentRequestBody
+	err := json.NewDecoder(r.Body).Decode(&agentReqBody)
 	if err != nil {
 		http.Error(w, "JSON da requisição inválido.", http.StatusBadRequest)
 		return
 	}
 
-	jsonBody, err := json.Marshal(requestBody)
+	ollamaPrompt := fmt.Sprintf("%s\n\n```go\n%s\n```", agentReqBody.ReviewInstruction, agentReqBody.Code)
+
+	ollamaRequestBody := RequestBody{
+		Model:  agentReqBody.Model,
+		Prompt: ollamaPrompt,
+	}
+
+	jsonBody, err := json.Marshal(ollamaRequestBody)
 	if err != nil {
 		http.Error(w, "Erro ao converter para JSON.", http.StatusInternalServerError)
 		return
