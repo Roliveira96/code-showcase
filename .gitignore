@@ -86,7 +86,5 @@
 /.idea/exempla-and-tests-golang.iml
 
 
-/example-send-email-use-apikey-azure-outlook/.env
-/example-generate-json-from-send-email/emails.txt
-/example-generate-json-from-send-email/.env
-/example-send-loop-notification-test/.env
+
+**/.env
