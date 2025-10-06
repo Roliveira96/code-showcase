@@ -25,13 +25,15 @@ type EmailPayload struct {
 }
 
 type EmailConfig struct {
-	NomeRemetente    string
-	EmailRemetente   string
-	EmailCopiaOculta string
-	NomeCopiaOculta  string
-	Assunto          string
-	IdTemplate       int
-	Tipo             int
+	NomeRemetente     string
+	EmailRemetente    string
+	EmailsEmCopia     []string
+	NomesEmCopia      []string
+	EmailsCopiaOculta []string
+	NomesCopiaOculta  []string
+	Assunto           string
+	IdTemplate        int
+	Tipo              int
 }
 
 func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, config EmailConfig) error {
@@ -44,6 +46,7 @@ func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, confi
 	leitor := csv.NewReader(arquivoCsv)
 	leitor.Comma = ','
 
+	// Lê e descarta a linha do cabeçalho ("Nome", "Email")
 	_, err = leitor.Read()
 	if err != nil {
 		return fmt.Errorf("erro ao ler o cabeçalho do CSV: %w", err)
@@ -69,26 +72,39 @@ func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, confi
 			return fmt.Errorf("erro ao ler uma linha do CSV: %w", err)
 		}
 
+		// Ajuste para o novo formato do CSV:
+		// linha[0] -> Nome
+		// linha[1] -> Email
+		nomeRepresentante := linha[0]
 		emailRepresentante := linha[1]
-		nomeRepresentante := linha[2]
-		emailUsuarioFinanceiro := linha[3]
-		nomeUsuarioFinanceiro := linha[4]
-		emailUsuarioCientifico := linha[5]
-		nomeUsuarioCientifico := linha[6]
 
 		copiaMapper := make(map[string]string)
-		if emailUsuarioFinanceiro != "" && nomeUsuarioFinanceiro != "" {
-			copiaMapper[emailUsuarioFinanceiro] = nomeUsuarioFinanceiro
-		}
-		if emailUsuarioCientifico != "" && nomeUsuarioCientifico != "" {
-			copiaMapper[emailUsuarioCientifico] = nomeUsuarioCientifico
+
+		// Adiciona destinatários em cópia (CC) do arquivo .env
+		if len(config.EmailsEmCopia) > 0 && len(config.EmailsEmCopia) == len(config.NomesEmCopia) {
+			for i, email := range config.EmailsEmCopia {
+				email = strings.TrimSpace(email)
+				nome := strings.TrimSpace(config.NomesEmCopia[i])
+				if email != "" && nome != "" {
+					copiaMapper[email] = nome
+				}
+			}
+		} else if len(config.EmailsEmCopia) != len(config.NomesEmCopia) {
+			fmt.Println("Aviso: Disparidade no número de e-mails e nomes em cópia no arquivo .env. Ignorando cópias do .env.")
 		}
 
-		// Inicializa o mapa de cópia oculta
+		// Adiciona destinatários em cópia oculta (BCC) do arquivo .env
 		copiaOcultaMapper := make(map[string]string)
-		// Adiciona o destinatário de cópia oculta padrão da configuração
-		if config.EmailCopiaOculta != "" && config.NomeCopiaOculta != "" {
-			copiaOcultaMapper[config.EmailCopiaOculta] = config.NomeCopiaOculta
+		if len(config.EmailsCopiaOculta) > 0 && len(config.EmailsCopiaOculta) == len(config.NomesCopiaOculta) {
+			for i, email := range config.EmailsCopiaOculta {
+				email = strings.TrimSpace(email)
+				nome := strings.TrimSpace(config.NomesCopiaOculta[i])
+				if email != "" && nome != "" {
+					copiaOcultaMapper[email] = nome
+				}
+			}
+		} else if len(config.EmailsCopiaOculta) != len(config.NomesCopiaOculta) {
+			fmt.Println("Aviso: Disparidade no número de e-mails e nomes em cópia oculta no arquivo .env. Ignorando cópias ocultas.")
 		}
 
 		payload := EmailPayload{
@@ -98,12 +114,12 @@ func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, confi
 				emailRepresentante: nomeRepresentante,
 			},
 			DestinatariosCopiaMapper:       copiaMapper,
-			DestinatariosCopiaOcultaMapper: copiaOcultaMapper, // Usa o mapa atualizado
+			DestinatariosCopiaOcultaMapper: copiaOcultaMapper,
 			IdTemplate:                     config.IdTemplate,
 			Tipo:                           config.Tipo,
 			Assunto:                        config.Assunto,
 			Variaveis: map[string]string{
-				"NomeCliente": GetFirstName(nomeRepresentante),
+				"FirstName": GetFirstName(nomeRepresentante),
 			},
 		}
 
@@ -156,19 +172,45 @@ func main() {
 	idTemplate, _ := strconv.Atoi(os.Getenv("ID_TEMPLATE"))
 	tipo, _ := strconv.Atoi(os.Getenv("TIPO_EMAIL"))
 
-	config := EmailConfig{
-		NomeRemetente:    os.Getenv("NOME_REMETENTE"),
-		EmailRemetente:   os.Getenv("EMAIL_REMETENTE"),
-		EmailCopiaOculta: os.Getenv("EMAIL_COPIA_OCULTA"),
-		NomeCopiaOculta:  os.Getenv("NOME_COPIA_OCULTA"),
-		Assunto:          os.Getenv("ASSUNTO_EMAIL"),
-		IdTemplate:       idTemplate,
-		Tipo:             tipo,
+	// Carrega e-mails em cópia (CC)
+	emailsEmCopiaStr := os.Getenv("EMAILS_EM_COPIA")
+	nomesEmCopiaStr := os.Getenv("NOMES_EM_COPIA")
+	var emailsEmCopia []string
+	if emailsEmCopiaStr != "" {
+		emailsEmCopia = strings.Split(emailsEmCopiaStr, ",")
+	}
+	var nomesEmCopia []string
+	if nomesEmCopiaStr != "" {
+		nomesEmCopia = strings.Split(nomesEmCopiaStr, ",")
 	}
 
-	caminhoCsv := "teste1.csv"
+	// Carrega e-mails em cópia oculta (BCC)
+	emailsCopiaOcultaStr := os.Getenv("EMAILS_COPIA_OCULTA")
+	nomesCopiaOcultaStr := os.Getenv("NOMES_COPIA_OCULTA")
+	var emailsCopiaOculta []string
+	if emailsCopiaOcultaStr != "" {
+		emailsCopiaOculta = strings.Split(emailsCopiaOcultaStr, ",")
+	}
+	var nomesCopiaOculta []string
+	if nomesCopiaOcultaStr != "" {
+		nomesCopiaOculta = strings.Split(nomesCopiaOcultaStr, ",")
+	}
+
+	config := EmailConfig{
+		NomeRemetente:     os.Getenv("NOME_REMETENTE"),
+		EmailRemetente:    os.Getenv("EMAIL_REMETENTE"),
+		EmailsEmCopia:     emailsEmCopia,
+		NomesEmCopia:      nomesEmCopia,
+		EmailsCopiaOculta: emailsCopiaOculta,
+		NomesCopiaOculta:  nomesCopiaOculta,
+		Assunto:           os.Getenv("ASSUNTO_EMAIL"),
+		IdTemplate:        idTemplate,
+		Tipo:              tipo,
+	}
+
+	caminhoCsv := "teste1.csv" // Lembre-se de usar o nome do seu novo arquivo CSV
 	prefixoSaida := "emails"
-	maxEnviosPorArquivo := 10
+	maxEnviosPorArquivo := 20
 
 	fmt.Printf("Gerando arquivos JSON a partir de '%s' com no máximo %d envios por arquivo...\n", caminhoCsv, maxEnviosPorArquivo)
 
