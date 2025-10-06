@@ -116,7 +116,6 @@ func processPDF(pdfPath string, wg *sync.WaitGroup, client *http.Client) {
 	req.Header.Set("Content-Type", "application/pdf")
 	req.Header.Set("X-Tika-PDFOcrStrategy", "ocr_and_text")
 	req.Header.Set("X-Tika-OCRLanguage", "grc+lat+heb+por+eng")
-	// O cabeçalho X-Tika-OCRpsm foi removido para evitar o erro 400 Bad Request.
 
 	resp, err := client.Do(req)
 	if err != nil {
