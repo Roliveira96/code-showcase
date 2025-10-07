@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<properties>
+    <server>
+        <taskTimeoutMillis>300000</taskTimeoutMillis>
+    </server>
+    <parsers>
+        <parser class="org.apache.tika.parser.DefaultParser"/>
+    </parsers>
+</properties>

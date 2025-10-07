@@ -43,7 +43,7 @@
      *.log
 
      # Environment files
-     .env
+     *.env
 
      # Archive files
      *.zip
@@ -73,6 +73,7 @@
      *.bak
      *.orig
      *.swm
+     **/.env
      *.swo
      *.swn
      *.log
@@ -81,5 +82,9 @@
 /.idea/vcs.xml
 /.idea/modules.xml
 /.idea/misc.xml
-/exemple-export-template-excel/main
+/example-export-template-excel/main
 /.idea/exempla-and-tests-golang.iml
+
+
+
+**/.env
