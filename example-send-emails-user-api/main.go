@@ -231,7 +231,7 @@ func main() {
 		return
 	}
 
-	caminhoCsv := "emails-teste.csv"
+	caminhoCsv := "envio.csv"
 	maxEnviosPorLote := 20
 
 	fmt.Printf("Iniciando envio de emails a partir de '%s' com no máximo %d envios por lote...\n", caminhoCsv, maxEnviosPorLote)

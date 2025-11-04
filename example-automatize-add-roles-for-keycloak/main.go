@@ -63,12 +63,16 @@ func getAccessToken() (string, error) {
 		os.Getenv("KC_URL"),
 		os.Getenv("KC_ADMIN_REALM"))
 
-	data := strings.NewReader(fmt.Sprintf(
+	dataStr := fmt.Sprintf(
 		"client_id=%s&username=%s&password=%s&grant_type=password",
 		os.Getenv("KC_CLIENT_ID"),
 		os.Getenv("KC_USERNAME"),
 		os.Getenv("KC_PASSWORD"),
-	))
+	)
+	data := strings.NewReader(dataStr)
+
+	println(url)
+	println(dataStr)
 
 	req, err := http.NewRequest("POST", url, data)
 	if err != nil {
