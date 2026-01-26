@@ -1,0 +1,1 @@
+package example_test_response_kafka
