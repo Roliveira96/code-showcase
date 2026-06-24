@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -102,11 +105,47 @@ type TimeEntryResponse struct {
 
 const (
 	uriBase   = "https://api.factorialhr.com/api/2025-04-01/"
-	apiKey    = "REMOVED_BY_SECURITY_DUE_TO_EXPOSURE"
 	idUsuario = 2288637
 )
 
+var apiKey = os.Getenv("FACTORIAL_API_KEY")
+
+func loadEnv() {
+	// Procura o arquivo .env no diretório atual ou no diretório pai
+	paths := []string{".env", "../.env"}
+	for _, path := range paths {
+		file, err := os.Open(path)
+		if err != nil {
+			continue
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				val := strings.TrimSpace(parts[1])
+				val = strings.Trim(val, `"'`)
+				if os.Getenv(key) == "" {
+					os.Setenv(key, val)
+				}
+			}
+		}
+		break
+	}
+}
+
 func main() {
+	loadEnv()
+	if envKey := os.Getenv("FACTORIAL_API_KEY"); envKey != "" {
+		apiKey = envKey
+	}
+
 	s := getAllSchedules()
 	s = getSchedulesUsuarioPertence(idUsuario, s)
 

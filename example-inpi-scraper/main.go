@@ -47,7 +47,12 @@ func main() {
 		os.Mkdir(downloadsDir, 0755)
 	}
 
-	// Criação do Relatório em Texto
+	leadsDir := filepath.Join("leads", strconv.Itoa(searchYear))
+	if err := os.MkdirAll(leadsDir, 0755); err != nil {
+		log.Fatalf("Erro ao criar pasta leads: %v", err)
+	}
+
+	// Relatório de Busca Pessoal do Usuário
 	termoSanitizado := strings.ReplaceAll(searchTerm, " ", "_")
 	relatorioPath := fmt.Sprintf("relatorio_inpi_busca_%s.txt", termoSanitizado)
 	relatorioFile, err := os.Create(relatorioPath)
@@ -56,16 +61,12 @@ func main() {
 	}
 	defer relatorioFile.Close()
 
-	// Cabeçalho do relatório
 	relatorioFile.WriteString(fmt.Sprintf("=======================================================\n"))
 	relatorioFile.WriteString(fmt.Sprintf("RELATÓRIO DE BUSCA INPI - AUTOMATIZADO\n"))
 	relatorioFile.WriteString(fmt.Sprintf("Termo Procurado: %s\n", searchTerm))
 	relatorioFile.WriteString(fmt.Sprintf("Ano Base: %d\n", searchYear))
-	relatorioFile.WriteString(fmt.Sprintf("Intervalo de Revistas (RPIs): %d até %d\n", startRPI, endRPI))
-	relatorioFile.WriteString(fmt.Sprintf("Data da Busca: %s\n", time.Now().Format("02/01/2006 15:04:05")))
 	relatorioFile.WriteString(fmt.Sprintf("=======================================================\n\n"))
 
-	// Variáveis para o Resumo Final
 	totalRevistasVerificadas := 0
 	revistasComEncontro := 0
 
@@ -76,9 +77,8 @@ func main() {
 
 		if _, err := os.Stat(fileName); err == nil {
 			fmt.Printf("\n--- Verificando RPI %d [CACHE LOCAL] ---\n", i)
-			achouNaRPI = processarXML(fileName, searchTerm, i, relatorioFile)
+			achouNaRPI = processarXML(fileName, searchTerm, i, relatorioFile, leadsDir)
 		} else {
-			// Download Direto se não tem cache
 			url := fmt.Sprintf("https://revistas.inpi.gov.br/txt/RM%d.zip", i)
 			fmt.Printf("\n--- Verificando RPI %d [WEB] ---\n", i)
 			fmt.Printf("Baixando e extraindo silenciosamente: %s\n", url)
@@ -91,9 +91,8 @@ func main() {
 					fmt.Printf("Erro no rpi %d: %v\n", i, err)
 				}
 				continue
-				// Se der erro/404, não tem como analisar
 			} else {
-				achouNaRPI = processarXML(fileName, searchTerm, i, relatorioFile)
+				achouNaRPI = processarXML(fileName, searchTerm, i, relatorioFile, leadsDir)
 			}
 		}
 
@@ -102,18 +101,17 @@ func main() {
 		}
 	}
 
-	// Gravando resumo final no TXT
 	relatorioFile.WriteString(fmt.Sprintf("\n=======================================================\n"))
 	relatorioFile.WriteString(fmt.Sprintf("RESUMO FINAL DA BUSCA:\n"))
 	relatorioFile.WriteString(fmt.Sprintf("Total de revistas vasculhadas: %d\n", totalRevistasVerificadas))
 	relatorioFile.WriteString(fmt.Sprintf("Total de revistas onde a marca/processo apareceu: %d\n", revistasComEncontro))
 	relatorioFile.WriteString(fmt.Sprintf("=======================================================\n"))
 
-	// Resumo final impresso na tela
 	fmt.Println("\n\n================ RESUMO FINAL ================")
 	fmt.Printf("✔ Total de revistas vasculhadas: %d\n", totalRevistasVerificadas)
 	fmt.Printf("✔ Total de revistas onde o termo '%s' apareceu: %d\n", searchTerm, revistasComEncontro)
-	fmt.Printf("✔ Relatório detalhado salvo no seu projeto em:\n 👉 %s\n", relatorioPath)
+	fmt.Printf("✔ Relatório detalhado da sua busca salvo em: 👉 %s\n", relatorioPath)
+	fmt.Printf("🔥 CSVs de Leads divididos automaticamente na pasta 👉 /leads/\n")
 	fmt.Println("==============================================")
 }
 
@@ -128,13 +126,21 @@ func calcularRPIsDoAno(targetYear int) (int, int) {
 	diffStartWeeks := int(startOfYear.Sub(baselineDate).Hours() / 24 / 7)
 	startRPI := baselineRPI + diffStartWeeks
 
+	var endDate time.Time
 	now := time.Now()
-	currentDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	for currentDate.Weekday() != time.Tuesday {
-		currentDate = currentDate.AddDate(0, 0, -1)
+	// Se for o ano corrente, não tem como prever o futuro
+	if targetYear == now.Year() {
+		endDate = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	} else {
+		// Se for ano passado, pega até a última semana do ano passado!
+		endDate = time.Date(targetYear, time.December, 31, 0, 0, 0, 0, time.UTC)
 	}
-	diffNowWeeks := int(currentDate.Sub(baselineDate).Hours() / 24 / 7)
-	endRPI := baselineRPI + diffNowWeeks
+
+	for endDate.Weekday() != time.Tuesday {
+		endDate = endDate.AddDate(0, 0, -1)
+	}
+	diffEndWeeks := int(endDate.Sub(baselineDate).Hours() / 24 / 7)
+	endRPI := baselineRPI + diffEndWeeks
 
 	if endRPI < startRPI {
 		endRPI = startRPI
@@ -195,8 +201,38 @@ func baixarEExtrairRevista(url string, saveFileName string) error {
 	return fmt.Errorf("nenhum XML de marca encontrado dentro do ZIP")
 }
 
-// Analisa e agora retorna um booleano (se achou nessa revista ou não) e salva no relatório
-func processarXML(fileName, term string, numeroRPI int, logger *os.File) bool {
+func extrairAtributo(linha string, param string) string {
+	idx := strings.Index(linha, param)
+	if idx == -1 {
+		return ""
+	}
+	start := idx + len(param) + 1
+	end := strings.Index(linha[start:], "\"")
+	if end == -1 {
+		return ""
+	}
+	conteudo := linha[start : start+end]
+	conteudo = strings.ReplaceAll(conteudo, ";", ",")
+	conteudo = strings.ReplaceAll(conteudo, "\n", " ")
+	return conteudo
+}
+
+func extrairTag(linha string, tagInicio string, tagFim string) string {
+	idxInicio := strings.Index(linha, tagInicio)
+	if idxInicio == -1 {
+		return ""
+	}
+	idxFim := strings.Index(linha[idxInicio:], tagFim)
+	if idxFim == -1 {
+		return ""
+	}
+	start := idxInicio + len(tagInicio)
+	conteudo := linha[start : idxInicio+idxFim]
+	conteudo = strings.ReplaceAll(conteudo, ";", ",")
+	return conteudo
+}
+
+func processarXML(fileName, term string, numeroRPI int, logger *os.File, leadsDir string) bool {
 	file, err := os.Open(fileName)
 	if err != nil {
 		fmt.Printf("Erro ao abrir cache XML: %v\n", err)
@@ -213,37 +249,94 @@ func processarXML(fileName, term string, numeroRPI int, logger *os.File) bool {
 	insideProcess := false
 	qualquerAparicaoNaRevista := false
 
+	// Configuração do Fatiamento dos CSVs (Máximo 2000 leads)
+	var leadsFile *os.File
+	leadsCounter := 0
+	partesGerais := 1
+
+	abrirNovoArquivoCSV := func() {
+		if leadsFile != nil {
+			leadsFile.Close()
+		}
+		pathCSV := filepath.Join(leadsDir, fmt.Sprintf("rv_%d_part_%d.csv", numeroRPI, partesGerais))
+		leadsFile, _ = os.Create(pathCSV)
+		leadsFile.WriteString("Revista;Processo;Razão Social;Estado;O que a empresa faz (Especificação);Status (Despacho)\n")
+		partesGerais++
+	}
+
+	abrirNovoArquivoCSV() // Abre a "part 1" inicial
+	
+	// Previne arquivos não fechados caso o scanner saia por erro
+	defer func() {
+		if leadsFile != nil {
+			leadsFile.Close()
+		}
+	}()
+
+	var leadProcesso, leadRazao, leadUF, leadAtividade, leadDespacho string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 
 		if strings.Contains(line, "<processo ") {
 			insideProcess = true
 			blockBuilder.Reset()
+			
+			leadProcesso = extrairAtributo(line, "numero=")
+			leadRazao = ""
+			leadUF = ""
+			leadAtividade = ""
+			leadDespacho = ""
 		}
 
 		if insideProcess {
 			blockBuilder.WriteString(line + "\n")
 
+			if strings.Contains(line, "<despacho ") && leadDespacho == "" {
+				leadDespacho = extrairAtributo(line, "nome=")
+			}
+
+			if strings.Contains(line, "<titular ") {
+				leadRazao = extrairAtributo(line, "nome-razao-social=")
+				leadUF = extrairAtributo(line, "uf=")
+			}
+
+			if strings.Contains(line, "<especificacao>") {
+				leadAtividade = extrairTag(line, "<especificacao>", "</especificacao>")
+			}
+			
 			if strings.Contains(strings.ToLower(line), term) {
 				found = true
 				qualquerAparicaoNaRevista = true
 			}
 
 			if strings.Contains(line, "</processo>") {
+				// 1. Gera e empacota o LEAd do seu novo banco
+				if leadRazao != "" {
+					if leadsCounter >= 2000 {
+						abrirNovoArquivoCSV()
+						leadsCounter = 0
+					}
+
+					linhaLead := fmt.Sprintf("%d;%s;%s;%s;%s;%s\n",
+						numeroRPI, leadProcesso, leadRazao, leadUF, leadAtividade, leadDespacho)
+					leadsFile.WriteString(linhaLead)
+					leadsCounter++
+				}
+
+				// 2. Extrai relatório da sua busca em específico
 				if found {
 					txtDoProcesso := blockBuilder.String()
-					// Imprime no console pra você ver rodando
 					fmt.Printf("\n★★★ LOCALIZADO NA RPI %d ★★★\n", numeroRPI)
 					fmt.Println(txtDoProcesso)
 					fmt.Println("--------------------------")
 
-					// E também imprime no Relatório Físico (.txt)!
 					logger.WriteString(fmt.Sprintf(">>>>>>>> LOG ENCONTRADO NA REVISTA (RPI): %d <<<<<<<<\n", numeroRPI))
 					logger.WriteString(txtDoProcesso)
 					logger.WriteString("\n-------------------------------------------------------\n\n")
 				}
 				insideProcess = false
-				found = false
+				found = false 
 			}
 		}
 	}

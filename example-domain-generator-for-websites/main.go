@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"regexp"
+	"sort"
+
 	"github.com/bobesa/go-domain-util/domainutil"
 	"github.com/fatih/color"
 	"golang.org/x/text/runes"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
-	"os"
-	"regexp"
-	"sort"
 
 	"net"
 	"strings"
@@ -20,9 +21,7 @@ func main() {
 	topleveldomains := []string{".com", ".com.br"}
 
 	words := []string{
-		"Byte", "Click", "Code", "Core", "Cyber", "Flow", "Flux", "Hub", "Hyper", "Infinity", "Link", "Loop", "Matrix", "Net", "Pixel", "Pulse", "Quantum", "Spark", "Tech", "Vertex", "Viral", "Wave", "Web",
-		"Cognitivo", "Digital", "Hiper", "up", "upsite", "house", "studio", "agencia", "world",
-		"tech", "WEB", "SOFT", "site", "web", "gato", "meggie", "mega", "surf", "code", "mrs", "robot", "go", "inside", "color", "mallows", "mash", "all",
+		"Camp", "Camping", "Wild", "Nature", "Trilha", "Trail", "Forest", "Woods", "Base", "Peak", "Summit", "Adventure", "Aventura", "Eco", "Green", "Outdoor", "Tenda", "Tent", "Fogueira", "Fire", "Star", "Sky", "Moon", "Livre", "Free", "Route", "Rota", "Map", "Mapa", "Compass", "Bussola", "Spot", "Place", "Site", "Park", "Parque", "Valley", "Vale", "River", "Rio", "Lake", "Lago", "Mountain", "Serra", "Trip", "Viagem", "Vibe", "Easy", "Check", "Go", "In", "Booking", "Reserva", "Explore", "Explora", "Roots", "Raizes", "Nomad", "Nomade", "Vagabond", "Bush", "Craft", "Survival", "Life", "Stay", "Pernoite", "Host",
 	}
 
 	words = sanitizeStrings(words)

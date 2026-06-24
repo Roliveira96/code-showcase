@@ -1,90 +1,86 @@
-     # Go build artifacts
-     /bin/
-     /obj/
-     *.exe
-     *.exe~
-     *.so
-     *.dylib
-     *.a
-     *.out
+# Go build artifacts
+/bin/
+/obj/
+*.exe
+*.exe~
+*.so
+*.dylib
+*.a
+*.out
 
-     # Test binary, build and coverage files
-     *.test
-     *.cover
+# Test binary, build and coverage files
+*.test
+*.cover
 
-     # Dependency directories (Note: Go modules are recommended, so these are less common)
-     vendor/
+# Dependency directories
+vendor/
 
-     # IDE and editor folders
-     .idea/
-     *.sublime-workspace
-     *.sublime-project
+# IDE and editor folders
+.idea/
+*.sublime-workspace
+*.sublime-project
 
-     # Visual Studio Code
-     .vscode/
+# Visual Studio Code
+.vscode/
 
-     # JetBrains GoLand
-     *.iml
-     *.ipr
-     *.iws
+# JetBrains GoLand
+*.iml
+*.ipr
+*.iws
 
-     # macOS Finder
-     .DS_Store
+# macOS Finder
+.DS_Store
 
-     # Thumbnails
-     *.Thumbs.db
+# Thumbnails
+*.Thumbs.db
 
-     # LibreOffice temporary files
-     ~$*
-     *.~lock.*
-     *.bak
+# LibreOffice temporary files
+~$*
+*.~lock.*
+*.bak
 
-     # Log files
-     *.log
+# Log files
+*.log
 
-     # Environment files
-     *.env
-
-     # Archive files
-     *.zip
-     *.tar.gz
-     *.tar.bz2
-     *.rar
-
-     # Node modules (if using with frontend)
-     node_modules/
-
-     # Python bytecode files (if using Python for any scripting)
-     *.pyc
-     *.pyo
-     __pycache__/
-
-     # Ruby (if applicable)
-     *.gem
-     *.rbc
-     .rbenv-*
-     .rvmrc
-
-     # Others
-     *.swp
-     *.swo
-     *.swn
-     *.tmp
-     *.bak
-     *.orig
-     *.swm
-     **/.env
-     *.swo
-     *.swn
-     *.log
-     *.xlsx#
-/.idea/.gitignore
-/.idea/vcs.xml
-/.idea/modules.xml
-/.idea/misc.xml
-/example-export-template-excel/main
-/.idea/exempla-and-tests-golang.iml
-
-
-
+# Environment files
+.env
+.env.*
+*.env
 **/.env
+**/.env.*
+
+# Archive files
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+
+# Node modules (if using with frontend)
+node_modules/
+
+# Python bytecode files (if using Python for any scripting)
+*.pyc
+*.pyo
+__pycache__/
+
+# Ruby (if applicable)
+*.gem
+*.rbc
+.rbenv-*
+.rvmrc
+
+# Others
+*.swp
+*.swo
+*.swn
+*.tmp
+*.bak
+*.orig
+*.swm
+*.xlsx#
+/example-export-template-excel/main
+/example-automatize-add-roles-for-keycloak/roles-teste.txt
+/example-inpi-scraper/revistas_inpi/
+/example-inpi-scraper/leads_comerciais_inpi.csv
+/example-inpi-scraper/leads/
+/example-test-response-kafka/response/

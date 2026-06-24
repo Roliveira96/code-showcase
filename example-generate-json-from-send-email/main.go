@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
@@ -36,17 +37,41 @@ type EmailConfig struct {
 	Tipo              int
 }
 
+// decodeISO88591ToUTF8 converte bytes de ISO-8859-1 para UTF-8.
+// ISO-8859-1 mapeia 1:1 para os primeiros 256 code points do Unicode.
+func decodeISO88591ToUTF8(iso88591 []byte) []byte {
+	var buf bytes.Buffer
+	buf.Grow(len(iso88591))
+	for _, b := range iso88591 {
+		buf.WriteRune(rune(b))
+	}
+	return buf.Bytes()
+}
+
+// sanitizeString remove caracteres que podem quebrar templates ou causar problemas
+func sanitizeString(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.ReplaceAll(s, "[", "")
+	s = strings.ReplaceAll(s, "]", "")
+	return s
+}
+
 func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, config EmailConfig) error {
-	arquivoCsv, err := os.Open(caminhoCsv)
+	// Lê o arquivo inteiro
+	conteudo, err := os.ReadFile(caminhoCsv)
 	if err != nil {
 		return fmt.Errorf("erro ao abrir o arquivo CSV: %w", err)
 	}
-	defer arquivoCsv.Close()
 
-	leitor := csv.NewReader(arquivoCsv)
-	leitor.Comma = ','
+	// Converte o conteúdo para UTF-8
+	conteudoUtf8 := decodeISO88591ToUTF8(conteudo)
 
-	// Lê e descarta a linha do cabeçalho ("Nome", "Email")
+	// Cria o leitor CSV a partir do conteúdo convertido
+	leitor := csv.NewReader(bytes.NewReader(conteudoUtf8))
+	leitor.Comma = ';'
+	leitor.LazyQuotes = true
+
+	// Lê e descarta a linha do cabeçalho
 	_, err = leitor.Read()
 	if err != nil {
 		return fmt.Errorf("erro ao ler o cabeçalho do CSV: %w", err)
@@ -73,38 +98,68 @@ func gerarJsonDeCsv(caminhoCsv string, prefixoSaida string, maxEnvios int, confi
 		}
 
 		// Ajuste para o novo formato do CSV:
-		// linha[0] -> Nome
-		// linha[1] -> Email
-		nomeRepresentante := linha[0]
-		emailRepresentante := linha[1]
+		// linha[0] -> Razao Social
+		// linha[1] -> Email Representante
+		// linha[2] -> Nome Representante
+		// linha[3] -> Email Financeiro
+		// linha[4] -> Nome Financeiro
+		// linha[5] -> Email Cientifico
+		// linha[6] -> Nome Cientifico
+		// linha[7] -> Email Adocao
+		// linha[8] -> Nome Adocao
+		if len(linha) < 3 {
+			fmt.Printf("Linha ignorada (formato inválido): %v\n", linha)
+			continue
+		}
+		nomeRepresentante := sanitizeString(linha[2])
+		emailRepresentante := sanitizeString(linha[1])
 
 		copiaMapper := make(map[string]string)
 
 		// Adiciona destinatários em cópia (CC) do arquivo .env
 		if len(config.EmailsEmCopia) > 0 && len(config.EmailsEmCopia) == len(config.NomesEmCopia) {
 			for i, email := range config.EmailsEmCopia {
-				email = strings.TrimSpace(email)
-				nome := strings.TrimSpace(config.NomesEmCopia[i])
+				email = sanitizeString(email)
+				nome := sanitizeString(config.NomesEmCopia[i])
 				if email != "" && nome != "" {
 					copiaMapper[email] = nome
 				}
 			}
-		} else if len(config.EmailsEmCopia) != len(config.NomesEmCopia) {
-			fmt.Println("Aviso: Disparidade no número de e-mails e nomes em cópia no arquivo .env. Ignorando cópias do .env.")
+		}
+
+		// Adiciona destinatários em cópia do CSV
+		colunasCopia := []struct {
+			emailIdx int
+			nomeIdx  int
+		}{
+			{3, 4}, // Financeiro
+			{5, 6}, // Cientifico
+			{7, 8}, // Adocao
+		}
+
+		for _, col := range colunasCopia {
+			if len(linha) > col.nomeIdx {
+				email := sanitizeString(linha[col.emailIdx])
+				nome := sanitizeString(linha[col.nomeIdx])
+				if email != "" {
+					if nome == "" {
+						nome = email // Fallback se não tiver nome
+					}
+					copiaMapper[email] = nome
+				}
+			}
 		}
 
 		// Adiciona destinatários em cópia oculta (BCC) do arquivo .env
 		copiaOcultaMapper := make(map[string]string)
 		if len(config.EmailsCopiaOculta) > 0 && len(config.EmailsCopiaOculta) == len(config.NomesCopiaOculta) {
 			for i, email := range config.EmailsCopiaOculta {
-				email = strings.TrimSpace(email)
-				nome := strings.TrimSpace(config.NomesCopiaOculta[i])
+				email = sanitizeString(email)
+				nome := sanitizeString(config.NomesCopiaOculta[i])
 				if email != "" && nome != "" {
 					copiaOcultaMapper[email] = nome
 				}
 			}
-		} else if len(config.EmailsCopiaOculta) != len(config.NomesCopiaOculta) {
-			fmt.Println("Aviso: Disparidade no número de e-mails e nomes em cópia oculta no arquivo .env. Ignorando cópias ocultas.")
 		}
 
 		payload := EmailPayload{
@@ -208,9 +263,9 @@ func main() {
 		Tipo:              tipo,
 	}
 
-	caminhoCsv := "teste1.csv" // Lembre-se de usar o nome do seu novo arquivo CSV
+	caminhoCsv := "49_DisparoFomentoDireto.CSV" // Lembre-se de usar o nome do seu novo arquivo CSV
 	prefixoSaida := "emails"
-	maxEnviosPorArquivo := 20
+	maxEnviosPorArquivo := 2000
 
 	fmt.Printf("Gerando arquivos JSON a partir de '%s' com no máximo %d envios por arquivo...\n", caminhoCsv, maxEnviosPorArquivo)
 
